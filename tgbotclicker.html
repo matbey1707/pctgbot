@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Clicker Game</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .click-area {
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+            background-color: var(--tg-theme-button-color, #3390ec);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.1s;
+        }
+
+        .click-area:active {
+            transform: scale(0.95);
+        }
+
+        .stats {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border-radius: 10px;
+        }
+
+        .upgrade-button {
+            background-color: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .upgrade-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="stats">
+            <h2>Очки: <span id="score">0</span></h2>
+            <h3>Монеты: <span id="coins">0</span></h3>
+            <h3>Множитель: <span id="multiplier">1</span>x</h3>
+        </div>
+
+        <div class="click-area" id="clickArea">
+            КЛИК!
+        </div>
+
+        <div class="upgrades">
+            <button class="upgrade-button" id="multiplierUpgrade">
+                Улучшить множитель (10 монет)
+            </button>
+            <button class="upgrade-button" id="autoClickerUpgrade">
+                Купить автокликер (50 монет)
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        let score = 0;
+        let coins = 0;
+        let multiplier = 1;
+        let autoClickerInterval = null;
+        let autoClickerCount = 0;
+
+        const scoreElement = document.getElementById('score');
+        const coinsElement = document.getElementById('coins');
+        const multiplierElement = document.getElementById('multiplier');
+        const clickArea = document.getElementById('clickArea');
+        const multiplierUpgrade = document.getElementById('multiplierUpgrade');
+        const autoClickerUpgrade = document.getElementById('autoClickerUpgrade');
+
+        clickArea.addEventListener('click', () => {
+            score += multiplier;
+            coins += multiplier;
+            updateDisplay();
+        });
+
+        multiplierUpgrade.addEventListener('click', () => {
+            if (coins >= 10) {
+                coins -= 10;
+                multiplier++;
+                updateDisplay();
+            }
+        });
+
+        autoClickerUpgrade.addEventListener('click', () => {
+            if (coins >= 50) {
+                coins -= 50;
+                autoClickerCount++;
+                if (!autoClickerInterval) {
+                    autoClickerInterval = setInterval(() => {
+                        score += multiplier * autoClickerCount;
+                        coins += multiplier * autoClickerCount;
+                        updateDisplay();
+                    }, 1000);
+                }
+                updateDisplay();
+            }
+        });
+
+        function updateDisplay() {
+            scoreElement.textContent = Math.floor(score);
+            coinsElement.textContent = Math.floor(coins);
+            multiplierElement.textContent = multiplier;
+
+            multiplierUpgrade.disabled = coins < 10;
+            autoClickerUpgrade.disabled = coins < 50;
+
+            // Отправляем данные в Telegram
+            tg.MainButton.setText(`Очки: ${Math.floor(score)}`);
+            if (!tg.MainButton.isVisible) {
+                tg.MainButton.show();
+            }
+        }
+
+        // Инициализация Telegram WebApp
+        tg.ready();
+    </script>
+</body>
+</html>
