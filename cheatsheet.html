@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Школьная шпаргалка</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: var(--tg-theme-bg-color, #f5f7fa);
+            color: var(--tg-theme-text-color, #1a1a1a);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+        h1 {
+            margin: 0 0 16px;
+            font-size: 22px;
+            text-align: center;
+        }
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .toolbar input, .toolbar select {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid var(--tg-theme-hint-color, #d0d4d9);
+            border-radius: 10px;
+            background: var(--tg-theme-secondary-bg-color, #ffffff);
+            color: inherit;
+            font-size: 15px;
+        }
+        .btn {
+            background: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            padding: 11px 16px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .btn:active { opacity: 0.7; }
+        .btn-danger {
+            background: #e53e3e;
+        }
+        .btn-secondary {
+            background: var(--tg-theme-secondary-bg-color, #e8eaed);
+            color: var(--tg-theme-text-color, #1a1a1a);
+        }
+        .add-form {
+            background: var(--tg-theme-secondary-bg-color, #ffffff);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: none;
+        }
+        .add-form.open { display: block; }
+        .add-form input, .add-form textarea, .add-form select {
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+            border: 1px solid var(--tg-theme-hint-color, #d0d4d9);
+            border-radius: 10px;
+            background: var(--tg-theme-bg-color, #f5f7fa);
+            color: inherit;
+            font-size: 15px;
+            font-family: inherit;
+        }
+        .add-form textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        .add-form .row {
+            display: flex;
+            gap: 8px;
+        }
+        .add-form .row .btn { flex: 1; }
+        .stats {
+            background: var(--tg-theme-secondary-bg-color, #ffffff);
+            border-radius: 10px;
+            padding: 8px 14px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: var(--tg-theme-hint-color, #707579);
+            text-align: center;
+        }
+        .sheet {
+            background: var(--tg-theme-secondary-bg-color, #ffffff);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .sheet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .sheet-title {
+            font-weight: 600;
+            font-size: 16px;
+            flex: 1;
+        }
+        .sheet-subject {
+            display: inline-block;
+            background: var(--tg-theme-button-color, #3390ec);
+            color: #fff;
+            padding: 2px 9px;
+            border-radius: 10px;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        .sheet-content {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.5;
+            max-height: 80px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+        }
+        .sheet-content.expanded {
+            max-height: none;
+        }
+        .sheet-content:not(.expanded).truncated::after {
+            content: "";
+            position: absolute;
+            bottom: 0; left: 0; right: 0; height: 30px;
+            background: linear-gradient(transparent,
+                var(--tg-theme-secondary-bg-color, #ffffff));
+        }
+        .sheet-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 10px;
+        }
+        .sheet-actions .btn {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+        .empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--tg-theme-hint-color, #707579);
+        }
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        .fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--tg-theme-button-color, #3390ec);
+            color: #fff;
+            font-size: 28px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Школьная шпаргалка</h1>
+
+        <div class="toolbar">
+            <input type="text" id="searchInput" placeholder="🔍 Поиск...">
+            <select id="filterSubject">
+                <option value="">Все предметы</option>
+            </select>
+        </div>
+
+        <div class="add-form" id="addForm">
+            <select id="newSubject">
+                <option value="Математика">Математика</option>
+                <option value="Русский язык">Русский язык</option>
+                <option value="Литература">Литература</option>
+                <option value="Физика">Физика</option>
+                <option value="Химия">Химия</option>
+                <option value="Биология">Биология</option>
+                <option value="История">История</option>
+                <option value="География">География</option>
+                <option value="Английский">Английский</option>
+                <option value="Информатика">Информатика</option>
+                <option value="Обществознание">Обществознание</option>
+                <option value="__custom__">+ Свой предмет</option>
+            </select>
+            <input type="text" id="customSubject" placeholder="Название предмета"
+                   style="display:none;">
+            <input type="text" id="newTitle" placeholder="Заголовок (например: «Теорема Пифагора»)">
+            <textarea id="newContent"
+                placeholder="Текст шпаргалки, формулы, правила..."></textarea>
+            <div class="row">
+                <button class="btn btn-secondary" id="cancelAdd">Отмена</button>
+                <button class="btn" id="saveBtn">💾 Сохранить</button>
+            </div>
+        </div>
+
+        <div class="stats" id="stats">Загружаем…</div>
+
+        <div id="sheetsList"></div>
+    </div>
+
+    <button class="fab" id="fabAdd" title="Добавить">+</button>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+
+const STORAGE_KEY = 'school_cheatsheets_v1';
+
+const sheetsListEl = document.getElementById('sheetsList');
+const statsEl = document.getElementById('stats');
+const searchInput = document.getElementById('searchInput');
+const filterSubject = document.getElementById('filterSubject');
+const addForm = document.getElementById('addForm');
+const fabAdd = document.getElementById('fabAdd');
+const cancelAdd = document.getElementById('cancelAdd');
+const saveBtn = document.getElementById('saveBtn');
+const newSubject = document.getElementById('newSubject');
+const customSubject = document.getElementById('customSubject');
+const newTitle = document.getElementById('newTitle');
+const newContent = document.getElementById('newContent');
+
+function load() {
+    try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    } catch {
+        return [];
+    }
+}
+function save(items) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+}
+
+let sheets = load();
+
+function escapeHtml(s) {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+}
+
+function refreshSubjectFilter() {
+    const subjects = [...new Set(sheets.map(s => s.subject))].sort();
+    const current = filterSubject.value;
+    filterSubject.innerHTML = '<option value="">Все предметы</option>' +
+        subjects.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+    if (subjects.includes(current)) filterSubject.value = current;
+}
+
+function render() {
+    const q = searchInput.value.trim().toLowerCase();
+    const subj = filterSubject.value;
+
+    let filtered = sheets;
+    if (subj) filtered = filtered.filter(s => s.subject === subj);
+    if (q) filtered = filtered.filter(s =>
+        s.title.toLowerCase().includes(q) ||
+        s.content.toLowerCase().includes(q) ||
+        s.subject.toLowerCase().includes(q)
+    );
+
+    statsEl.textContent = `Всего: ${sheets.length}` +
+        (filtered.length !== sheets.length ? ` · Показано: ${filtered.length}` : '');
+
+    if (filtered.length === 0) {
+        sheetsListEl.innerHTML = `
+            <div class="empty">
+                <div class="empty-icon">📭</div>
+                <div>${sheets.length === 0
+                    ? 'Пока пусто. Нажми «+» чтобы добавить шпаргалку.'
+                    : 'Ничего не найдено по фильтрам.'}</div>
+            </div>`;
+        return;
+    }
+
+    sheetsListEl.innerHTML = filtered.map(s => `
+        <div class="sheet" data-id="${s.id}">
+            <span class="sheet-subject">${escapeHtml(s.subject)}</span>
+            <div class="sheet-header">
+                <div class="sheet-title">${escapeHtml(s.title)}</div>
+            </div>
+            <div class="sheet-content">${escapeHtml(s.content)}</div>
+            <div class="sheet-actions">
+                <button class="btn btn-secondary" data-action="copy">📋 Копировать</button>
+                <button class="btn btn-danger" data-action="delete">🗑️ Удалить</button>
+            </div>
+        </div>
+    `).join('');
+
+    document.querySelectorAll('.sheet-content').forEach(el => {
+        if (el.scrollHeight > el.clientHeight + 2) el.classList.add('truncated');
+        el.addEventListener('click', () => el.classList.toggle('expanded'));
+    });
+}
+
+sheetsListEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const sheetEl = btn.closest('.sheet');
+    const id = sheetEl.dataset.id;
+    const action = btn.dataset.action;
+    const sheet = sheets.find(s => s.id === id);
+    if (!sheet) return;
+
+    if (action === 'delete') {
+        tg.showConfirm
+            ? tg.showConfirm(`Удалить «${sheet.title}»?`, (ok) => { if (ok) doDelete(id); })
+            : confirm(`Удалить «${sheet.title}»?`) && doDelete(id);
+    } else if (action === 'copy') {
+        const text = `${sheet.title}\n\n${sheet.content}`;
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text)
+                .then(() => tg.HapticFeedback?.notificationOccurred?.('success'));
+        }
+    }
+});
+
+function doDelete(id) {
+    sheets = sheets.filter(s => s.id !== id);
+    save(sheets);
+    refreshSubjectFilter();
+    render();
+    try { tg.sendData(JSON.stringify({ action: 'delete', id })); } catch {}
+}
+
+fabAdd.addEventListener('click', () => {
+    addForm.classList.add('open');
+    newTitle.focus();
+    addForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+
+cancelAdd.addEventListener('click', () => {
+    addForm.classList.remove('open');
+    newTitle.value = '';
+    newContent.value = '';
+    customSubject.value = '';
+    customSubject.style.display = 'none';
+    newSubject.value = 'Математика';
+});
+
+newSubject.addEventListener('change', () => {
+    if (newSubject.value === '__custom__') {
+        customSubject.style.display = 'block';
+        customSubject.focus();
+    } else {
+        customSubject.style.display = 'none';
+    }
+});
+
+saveBtn.addEventListener('click', () => {
+    const subject = newSubject.value === '__custom__'
+        ? customSubject.value.trim()
+        : newSubject.value;
+    const title = newTitle.value.trim();
+    const content = newContent.value.trim();
+
+    if (!subject) { alert('Укажи предмет'); return; }
+    if (!title) { alert('Укажи заголовок'); return; }
+    if (!content) { alert('Введи текст шпаргалки'); return; }
+
+    const sheet = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        subject, title, content,
+        createdAt: new Date().toISOString(),
+    };
+    sheets.unshift(sheet);
+    save(sheets);
+    refreshSubjectFilter();
+    render();
+
+    try { tg.sendData(JSON.stringify({ action: 'add', ...sheet })); } catch {}
+    tg.HapticFeedback?.notificationOccurred?.('success');
+
+    cancelAdd.click();
+});
+
+searchInput.addEventListener('input', render);
+filterSubject.addEventListener('change', render);
+
+if (sheets.length === 0) {
+    sheets = [
+        {
+            id: 'demo1', subject: 'Математика',
+            title: 'Теорема Пифагора',
+            content: 'В прямоугольном треугольнике квадрат гипотенузы равен сумме квадратов катетов:\n\na² + b² = c²',
+            createdAt: new Date().toISOString(),
+        },
+        {
+            id: 'demo2', subject: 'Русский язык',
+            title: 'Жи-ши, ча-ща, чу-щу',
+            content: 'Пиши с буквой И: жи-ши (жить, шить)\nПиши с буквой А: ча-ща (чай, роща)\nПиши с буквой У: чу-щу (чудо, щука)',
+            createdAt: new Date().toISOString(),
+        },
+        {
+            id: 'demo3', subject: 'Физика',
+            title: 'Второй закон Ньютона',
+            content: 'F = m · a\n\nF — сила (Н)\nm — масса (кг)\na — ускорение (м/с²)',
+            createdAt: new Date().toISOString(),
+        },
+    ];
+    save(sheets);
+}
+
+refreshSubjectFilter();
+render();
+</script>
+</body>
+</html>
